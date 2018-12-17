@@ -13,45 +13,48 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.List;
-
-import javax.security.auth.callback.Callback;
-
 
 
 public class QuestionsRequest implements Response.Listener<JSONObject>, Response.ErrorListener {
 
+    // initialize variables for context and callback activity
     private Context context;
     private Callback activity;
 
+    // callback will be performed on one of these
     public interface Callback {
         void gotQuestions(ArrayList<Question> questions);
         void gotQuestionsError(String message);
     }
 
+    // constructor for this class
     public QuestionsRequest(Context context) {
         this.context = context;
     }
 
     void getQuestions(Callback activity, String url) {
-        Log.d("url2", url);
+
+        // create volley queue, request json object and add to queue
         RequestQueue queue = Volley.newRequestQueue(context);
         JsonObjectRequest jsonObjectRequest = new JsonObjectRequest(url, null, this, this);
         queue.add(jsonObjectRequest);
+
+        // save callback activity in local variable
         this.activity = activity;
     }
 
+    // when api request failed
     @Override
     public void onErrorResponse(VolleyError error) {
         activity.gotQuestionsError(error.getMessage());
     }
 
+    // when api request succeeded
     @Override
     public void onResponse(JSONObject response) {
         try {
-            Log.d("JSONObject received!", "JSONObject received!");
+
             // create arraylist to stash question objects
             ArrayList<Question> questions = new ArrayList<>();
 
@@ -59,21 +62,14 @@ public class QuestionsRequest implements Response.Listener<JSONObject>, Response
             JSONArray questionsArray = response.getJSONArray("results");
             for (int i = 0; i < questionsArray.length(); i++) {
                 JSONObject questionObject = questionsArray.getJSONObject(i);
+
                 String category = questionObject.getString("category");
-                Log.d("category", category);
-
                 String type = questionObject.getString("type");
-                Log.d("type", type);
-
                 String difficulty = questionObject.getString("difficulty");
-                Log.d("difficulty", difficulty);
-
                 String question = questionObject.getString("question");
-                Log.d("question", question);
-
                 String correctAnswer = questionObject.getString("correct_answer");
-                Log.d("correct answer", correctAnswer);
 
+                // convert json array of incorrect answers to array list
                 JSONArray incorrectAnswers = questionObject.getJSONArray("incorrect_answers");
                 ArrayList<String> incorrectAnswersArray = new ArrayList<>();
                 for (int j = 0; j < incorrectAnswers.length(); j++) {
@@ -82,12 +78,14 @@ public class QuestionsRequest implements Response.Listener<JSONObject>, Response
 
                 }
 
-
-                // add question objects to arraylist of questions
-                Question objectQuestion =  new Question(category, type, difficulty, question, correctAnswer, incorrectAnswersArray);
+                // add question objects to array list of questions
+                Question objectQuestion =  new Question(category, type, difficulty, question,
+                        correctAnswer, incorrectAnswersArray);
                 questions.add(objectQuestion);
 
             }
+
+            // perform callback and add array list of question objects
             activity.gotQuestions(questions);
         }
         catch (JSONException e) {
